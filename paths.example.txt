@@ -1,0 +1,2 @@
+/Absolute_Path/To_Some_Cool/Shows
+\\Windows_Network_Path\To_Some_Cool\Shows
