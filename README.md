@@ -34,7 +34,7 @@ For a custom schedule:
 npm run schedule -- --cron "<some cron schedule goes here>"
 ```
 
-# Tips n Trickz
+# Tipz n Trickz
 The episode information is magicked from the filenames by Guessit, so if you have a weird file name it may not work. Best pattern is something like `Show Name - S01E01 - Episode Title.mp4` or something similar.
 
 Together we can make Bsky a weebier place.
