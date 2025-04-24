@@ -1,4 +1,6 @@
+process.title = "AnimeFramez";
 import dotenv from 'dotenv';
+import pino from 'pino'
 dotenv.config();
 
 import ffmpeg from 'fluent-ffmpeg';
@@ -13,6 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const allowedExtensions = ['.mp4', '.mov', '.avi', '.mkv'];
+const logger = pino(pino.destination('animeframez.log'));
 
 function getVideoFiles(dir) {
   let results = [];
@@ -23,7 +26,10 @@ function getVideoFiles(dir) {
     if (stat && stat.isDirectory()) {
       results = results.concat(getVideoFiles(filePath));
     } else {
-      if (allowedExtensions.includes(path.extname(file).toLowerCase())) {
+      if (
+        allowedExtensions.includes(path.extname(file).toLowerCase()) &&
+        !file.startsWith('.')
+      ) {
         results.push(filePath);
       }
     }
@@ -80,7 +86,7 @@ async function main() {
   try {
     const pathsFile = process.argv[2];
     if (!pathsFile) {
-      console.error('Please provide a text file with directory paths as the first argument.');
+      logger.error('Please provide a text file with directory paths as the first argument.');
       process.exit(1);
     }
 
@@ -91,28 +97,28 @@ async function main() {
       .filter(line => line.length > 0);
       
     if (directories.length === 0) {
-      console.error('No valid directories found in the provided text file.');
+      logger.error('No valid directories found in the provided text file.');
       process.exit(1);
     }
 
     const randomDir = directories[Math.floor(Math.random() * directories.length)];
-    console.log(`Selected directory: ${randomDir}`);
+    logger.info(`Selected directory: ${randomDir}`);
 
     const videoFiles = getVideoFiles(randomDir);
     if (videoFiles.length === 0) {
-      console.error('No video files found in the selected directory and its subfolders.');
+      logger.error('No video files found in the selected directory and its subfolders.');
       process.exit(1);
     }
 
     const videoFilePath = videoFiles[Math.floor(Math.random() * videoFiles.length)];
-    console.log(`Randomly selected video file: ${videoFilePath}`);
+    logger.info(`Randomly selected video file: ${videoFilePath}`);
 
     let metadata = {};
     try {
       metadata = await getGuessitMetadata(videoFilePath);
-      console.log('GuessIt metadata:', metadata);
+      logger.info('GuessIt metadata:', metadata);
     } catch (err) {
-      console.error('GuessIt failed, proceeding without metadata:', err);
+      logger.error('GuessIt failed, proceeding without metadata:', err);
     }
 
     const duration = await getVideoDuration(videoFilePath);
@@ -124,7 +130,8 @@ async function main() {
     const season = metadata.season ? `S${String(metadata.season).padStart(2, '0')}` : '';
     const episode = metadata.episode ? `E${String(metadata.episode).padStart(2, '0')}` : '';
     const episodeTitle = metadata.episode_title ? ` - ${metadata.episode_title}` : '';
-    const caption = `${showName} ${season} ${episode} ${episodeTitle} at ${formatTime(randomTime)}`;
+    const year = metadata.year ? ` (${metadata.year})` : '';
+    const caption = `${showName}${year} ${season} ${episode} ${episodeTitle} at ${formatTime(randomTime)}`;
 
     const agent = new BskyAgent({ service: 'https://bsky.social' });
     await agent.login({
@@ -134,7 +141,7 @@ async function main() {
 
     const fileBuffer = fs.readFileSync(outputImagePath);
     const uploadResp = await agent.uploadBlob(fileBuffer, { encoding: 'image/jpeg' });
-    console.log('Image uploaded:', uploadResp);
+    logger.info('Image uploaded:', uploadResp);
 
     const postResp = await agent.post({
       text: caption,
@@ -149,15 +156,15 @@ async function main() {
       }
     });
     fs.unlinkSync(outputImagePath);
-    console.log('Post created successfully:', postResp);
+    logger.info('Post created successfully:', postResp);
   } catch (error) {
-    console.error('An error occurred:', error);
+    logger.error('An error occurred:', error);
   }
 }
 
 if (process.env.scheduled === 'true') {
-  const scheduleStr = process.env.cron || '0 12 * * *';
-  console.log(`Scheduling job with cron pattern: ${scheduleStr}`);
+  const scheduleStr = process.env.cron || '0 */3 * * *';
+  logger.info(`Scheduling job with cron pattern: ${scheduleStr}`);
   new CronJob(scheduleStr, main, null, true);
 } else {
   main();

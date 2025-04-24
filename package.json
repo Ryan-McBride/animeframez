@@ -3,9 +3,24 @@
   "version": "1.0.0",
   "main": "index.js",
   "type": "module",
+  "bin": "launcher.js",
+  "pkg": {
+    "scripts": [
+      "index.js",
+      "paths.txt"
+    ],
+    "assets": [
+      "paths.txt",
+      ".env"
+    ],
+    "targets": [
+      "node18-win-x64"
+    ],
+    "outputPath": "dist"
+  },
   "scripts": {
-    "once": "node ./index.js",
-    "scheduled": "cross-env scheduled=\"true\" node ./index.js",
+    "once": "node ./index.js paths.txt",
+    "scheduled": "cross-env scheduled=\"true\" node ./index.js paths.txt",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -17,6 +32,7 @@
     "cross-env": "^7.0.3",
     "dotenv": "^16.4.7",
     "fluent-ffmpeg": "^2.1.3",
+    "pino": "^9.6.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
