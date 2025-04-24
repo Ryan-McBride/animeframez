@@ -15,7 +15,22 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const allowedExtensions = ['.mp4', '.mov', '.avi', '.mkv'];
-const logger = pino(pino.destination('animeframez.log'));
+const logger = pino({
+  transport: {
+    targets: [
+      {
+        target: 'pino-pretty', // human-readable terminal logs
+        options: { colorize: true },
+        level: 'debug',
+      },
+      {
+        target: 'pino/file', // custom stream handler to file
+        options: { destination: './animeframez.log' },
+        level: 'info',
+      },
+    ],
+  },
+});
 
 function getVideoFiles(dir) {
   let results = [];
@@ -158,6 +173,7 @@ async function main() {
     fs.unlinkSync(outputImagePath);
     logger.info('Post created successfully:', postResp);
   } catch (error) {
+    console.log(error);
     logger.error('An error occurred:', error);
   }
 }
